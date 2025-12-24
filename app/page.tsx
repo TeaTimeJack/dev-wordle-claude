@@ -5,6 +5,7 @@ import Grid from './components/Grid';
 import Keyboard from './components/Keyboard';
 import StatsModal from './components/StatsModal';
 import HelpModal from './components/HelpModal';
+import WordListModal from './components/WordListModal';
 import { GameState, GameStatus, GameStats } from './lib/types';
 import { getRandomWord, getDailyWord, getDaysSinceEpoch } from './lib/words';
 import { isValidWord, getKeyboardStates } from './lib/gameLogic';
@@ -93,6 +94,7 @@ export default function Home() {
   const [stats, setStats] = useState<GameStats | null>(null);
   const [showStats, setShowStats] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showWordList, setShowWordList] = useState(false);
   const [gameMode, setGameMode] = useState<GameMode>('daily');
 
   // Load stats on mount and initialize daily game
@@ -232,13 +234,22 @@ export default function Home() {
     <div className="min-h-screen bg-[#1e1e1e] text-[#d4d4d4] flex flex-col items-center justify-between py-8 px-4 font-mono">
       {/* Header */}
       <div className="w-full max-w-lg relative">
-        <button
-          onClick={() => setShowHelp(true)}
-          className="absolute left-0 top-0 text-2xl text-[#007acc] hover:text-[#1a8ccc] transition-colors"
-          title="How to Play"
-        >
-          ❓
-        </button>
+        <div className="absolute left-0 top-0 flex gap-2">
+          <button
+            onClick={() => setShowHelp(true)}
+            className="text-2xl text-[#007acc] hover:text-[#1a8ccc] transition-colors"
+            title="How to Play"
+          >
+            ❓
+          </button>
+          <button
+            onClick={() => setShowWordList(true)}
+            className="text-2xl text-[#007acc] hover:text-[#1a8ccc] transition-colors"
+            title="View Word List"
+          >
+            📝
+          </button>
+        </div>
         <button
           onClick={() => setShowStats(true)}
           className="absolute right-0 top-0 text-2xl text-[#007acc] hover:text-[#1a8ccc] transition-colors"
@@ -349,6 +360,9 @@ export default function Home() {
 
       {/* Help Modal */}
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
+
+      {/* Word List Modal */}
+      <WordListModal isOpen={showWordList} onClose={() => setShowWordList(false)} />
     </div>
   );
 }
