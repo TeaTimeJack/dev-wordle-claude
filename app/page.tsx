@@ -1,65 +1,354 @@
-import Image from "next/image";
+'use client';
+
+import { useReducer, useEffect, useState } from 'react';
+import Grid from './components/Grid';
+import Keyboard from './components/Keyboard';
+import StatsModal from './components/StatsModal';
+import HelpModal from './components/HelpModal';
+import { GameState, GameStatus, GameStats } from './lib/types';
+import { getRandomWord, getDailyWord, getDaysSinceEpoch } from './lib/words';
+import { isValidWord, getKeyboardStates } from './lib/gameLogic';
+import { WORD_LENGTH, MAX_GUESSES } from './lib/constants';
+import { loadStats, updateStats } from './lib/stats';
+
+type GameMode = 'daily' | 'practice';
+
+type GameAction =
+  | { type: 'ADD_LETTER'; letter: string }
+  | { type: 'REMOVE_LETTER' }
+  | { type: 'SUBMIT_GUESS' }
+  | { type: 'SET_GAME_STATUS'; status: GameStatus }
+  | { type: 'NEW_GAME'; answer?: string };
+
+const initialState: GameState = {
+  guesses: [],
+  currentGuess: '',
+  gameStatus: 'playing',
+  answer: getRandomWord(),
+  currentRow: 0,
+};
+
+function gameReducer(state: GameState, action: GameAction): GameState {
+  switch (action.type) {
+    case 'ADD_LETTER':
+      if (state.currentGuess.length < WORD_LENGTH && state.gameStatus === 'playing') {
+        return {
+          ...state,
+          currentGuess: state.currentGuess + action.letter,
+        };
+      }
+      return state;
+
+    case 'REMOVE_LETTER':
+      if (state.currentGuess.length > 0 && state.gameStatus === 'playing') {
+        return {
+          ...state,
+          currentGuess: state.currentGuess.slice(0, -1),
+        };
+      }
+      return state;
+
+    case 'SUBMIT_GUESS':
+      if (state.currentGuess.length === WORD_LENGTH && state.gameStatus === 'playing') {
+        const newGuesses = [...state.guesses, state.currentGuess];
+        const won = state.currentGuess === state.answer;
+        const lost = newGuesses.length === MAX_GUESSES && !won;
+
+        return {
+          ...state,
+          guesses: newGuesses,
+          currentGuess: '',
+          currentRow: state.currentRow + 1,
+          gameStatus: won ? 'won' : lost ? 'lost' : 'playing',
+        };
+      }
+      return state;
+
+    case 'SET_GAME_STATUS':
+      return {
+        ...state,
+        gameStatus: action.status,
+      };
+
+    case 'NEW_GAME':
+      return {
+        guesses: [],
+        currentGuess: '',
+        gameStatus: 'playing',
+        answer: action.answer || getRandomWord(),
+        currentRow: 0,
+      };
+
+    default:
+      return state;
+  }
+}
 
 export default function Home() {
+  const [state, dispatch] = useReducer(gameReducer, initialState);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isRevealing, setIsRevealing] = useState(false);
+  const [isInvalid, setIsInvalid] = useState(false);
+  const [isWinning, setIsWinning] = useState(false);
+  const [stats, setStats] = useState<GameStats | null>(null);
+  const [showStats, setShowStats] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [gameMode, setGameMode] = useState<GameMode>('daily');
+
+  // Load stats on mount and initialize daily game
+  useEffect(() => {
+    setStats(loadStats());
+    // Initialize with daily word if in daily mode
+    const initialAnswer = gameMode === 'daily' ? getDailyWord() : getRandomWord();
+    dispatch({ type: 'NEW_GAME', answer: initialAnswer });
+
+    // Show help on first visit
+    const hasSeenHelp = localStorage.getItem('devWordle_hasSeenHelp');
+    if (!hasSeenHelp) {
+      setShowHelp(true);
+      localStorage.setItem('devWordle_hasSeenHelp', 'true');
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Check if daily challenge has been played today
+  const isDailyPlayed = () => {
+    if (typeof window === 'undefined') return false;
+    const today = getDaysSinceEpoch();
+    const lastDaily = localStorage.getItem('devWordle_lastDaily');
+    return lastDaily === String(today);
+  };
+
+  // Mark daily challenge as played
+  const markDailyPlayed = () => {
+    if (typeof window === 'undefined') return;
+    const today = getDaysSinceEpoch();
+    localStorage.setItem('devWordle_lastDaily', String(today));
+  };
+
+  // Update stats when game ends
+  useEffect(() => {
+    if (state.gameStatus !== 'playing' && stats) {
+      const won = state.gameStatus === 'won';
+      const guessCount = state.guesses.length;
+      const newStats = updateStats(stats, won, guessCount);
+      setStats(newStats);
+
+      // Mark daily as played if in daily mode
+      if (gameMode === 'daily') {
+        markDailyPlayed();
+      }
+
+      // Show stats modal after a delay (after animations)
+      setTimeout(() => setShowStats(true), 2000);
+    }
+  }, [state.gameStatus]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleKeyPress = (key: string) => {
+    if (state.gameStatus !== 'playing' || isRevealing) return;
+
+    if (key === 'ENTER') {
+      // Validate word before submitting
+      if (state.currentGuess.length !== WORD_LENGTH) {
+        setErrorMessage('Not enough letters');
+        setIsInvalid(true);
+        setTimeout(() => {
+          setErrorMessage('');
+          setIsInvalid(false);
+        }, 600);
+        return;
+      }
+
+      if (!isValidWord(state.currentGuess)) {
+        setErrorMessage('Not in word list');
+        setIsInvalid(true);
+        setTimeout(() => {
+          setErrorMessage('');
+          setIsInvalid(false);
+        }, 600);
+        return;
+      }
+
+      // Trigger reveal animation
+      setIsRevealing(true);
+      setTimeout(() => {
+        dispatch({ type: 'SUBMIT_GUESS' });
+        setIsRevealing(false);
+
+        // Check if won and trigger win animation
+        if (state.currentGuess === state.answer) {
+          setIsWinning(true);
+          setTimeout(() => setIsWinning(false), 1000);
+        }
+      }, 1500); // Wait for all tiles to flip (5 tiles * 150ms delay + 500ms animation)
+    } else if (key === '⌫' || key === 'BACKSPACE') {
+      dispatch({ type: 'REMOVE_LETTER' });
+    } else if (/^[A-Z]$/.test(key)) {
+      dispatch({ type: 'ADD_LETTER', letter: key });
+    }
+  };
+
+  // Physical keyboard handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      if (e.key === 'Enter') {
+        handleKeyPress('ENTER');
+      } else if (e.key === 'Backspace') {
+        handleKeyPress('⌫');
+      } else if (/^[a-z]$/i.test(e.key)) {
+        handleKeyPress(e.key.toUpperCase());
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [state.currentGuess, state.gameStatus]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleNewGame = () => {
+    // Prevent new daily game if already played today
+    if (gameMode === 'daily' && isDailyPlayed()) {
+      setErrorMessage('Come back tomorrow for a new daily challenge!');
+      setTimeout(() => setErrorMessage(''), 3000);
+      return;
+    }
+
+    const newAnswer = gameMode === 'daily' ? getDailyWord() : getRandomWord();
+    dispatch({ type: 'NEW_GAME', answer: newAnswer });
+    setErrorMessage('');
+  };
+
+  const handleModeChange = (mode: GameMode) => {
+    setGameMode(mode);
+    // Start new game with correct word for the mode
+    const newAnswer = mode === 'daily' ? getDailyWord() : getRandomWord();
+    dispatch({ type: 'NEW_GAME', answer: newAnswer });
+    setErrorMessage('');
+  };
+
+  const keyboardStates = getKeyboardStates(state.guesses, state.answer);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="min-h-screen bg-[#1e1e1e] text-[#d4d4d4] flex flex-col items-center justify-between py-8 px-4 font-mono">
+      {/* Header */}
+      <div className="w-full max-w-lg relative">
+        <button
+          onClick={() => setShowHelp(true)}
+          className="absolute left-0 top-0 text-2xl text-[#007acc] hover:text-[#1a8ccc] transition-colors"
+          title="How to Play"
+        >
+          ❓
+        </button>
+        <button
+          onClick={() => setShowStats(true)}
+          className="absolute right-0 top-0 text-2xl text-[#007acc] hover:text-[#1a8ccc] transition-colors"
+          title="View Statistics"
+        >
+          📊
+        </button>
+        <h1 className="text-4xl font-bold text-center mb-2 text-[#007acc]">
+          <span className="text-[#d4d4d4]">$</span> dev-wordle
+        </h1>
+        <p className="text-center text-[#6e7681] text-sm font-mono">
+          <span className="text-[#4ec9b0]">//</span> Guess the 5-letter programming term
+        </p>
+
+        {/* Mode Toggle */}
+        <div className="flex justify-center gap-2 mt-4">
+          <button
+            onClick={() => handleModeChange('daily')}
+            className={`px-4 py-2 rounded font-bold text-sm transition-colors ${
+              gameMode === 'daily'
+                ? 'bg-[#007acc] text-white'
+                : 'bg-[#3e3e42] text-[#6e7681] hover:bg-[#505053]'
+            }`}
+          >
+            Daily
+          </button>
+          <button
+            onClick={() => handleModeChange('practice')}
+            className={`px-4 py-2 rounded font-bold text-sm transition-colors ${
+              gameMode === 'practice'
+                ? 'bg-[#007acc] text-white'
+                : 'bg-[#3e3e42] text-[#6e7681] hover:bg-[#505053]'
+            }`}
+          >
+            Practice
+          </button>
+        </div>
+      </div>
+
+      {/* Main Game Area */}
+      <div className="flex-1 flex flex-col items-center justify-center gap-8 w-full max-w-lg">
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded">
+            {errorMessage}
+          </div>
+        )}
+
+        {/* Game Grid */}
+        <Grid
+          guesses={state.guesses}
+          currentGuess={state.currentGuess}
+          answer={state.answer}
+          currentRow={state.currentRow}
+          isRevealing={isRevealing}
+          isInvalid={isInvalid}
+          isWinning={isWinning}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+
+        {/* Win/Loss Message */}
+        {state.gameStatus !== 'playing' && (
+          <div className="text-center">
+            {state.gameStatus === 'won' ? (
+              <div className="bg-green-100 border border-green-400 text-green-700 px-6 py-4 rounded-lg">
+                <p className="text-2xl font-bold mb-2">🎉 You Won!</p>
+                <p className="text-sm">
+                  You guessed the word in {state.guesses.length} {state.guesses.length === 1 ? 'try' : 'tries'}
+                </p>
+              </div>
+            ) : (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg">
+                <p className="text-2xl font-bold mb-2">Game Over</p>
+                <p className="text-sm">The word was: <span className="font-bold">{state.answer}</span></p>
+              </div>
+            )}
+            <button
+              onClick={handleNewGame}
+              className="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-bold transition-colors"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+              Play Again
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Keyboard */}
+      <div className="w-full max-w-lg">
+        <Keyboard onKeyPress={handleKeyPress} letterStates={keyboardStates} />
+      </div>
+
+      {/* Stats Modal */}
+      {stats && (
+        <StatsModal
+          isOpen={showStats}
+          onClose={() => setShowStats(false)}
+          stats={stats}
+          lastGame={
+            state.gameStatus !== 'playing'
+              ? {
+                  guesses: state.guesses,
+                  answer: state.answer,
+                  won: state.gameStatus === 'won',
+                }
+              : undefined
+          }
+        />
+      )}
+
+      {/* Help Modal */}
+      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
     </div>
   );
 }
