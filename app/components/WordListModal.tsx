@@ -12,20 +12,20 @@ export default function WordListModal({ isOpen, onClose }: WordListModalProps) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Word List">
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Answer Words Section */}
         <div>
-          <h3 className="text-lg font-bold text-[#4ec9b0] mb-3">
+          <h3 className="text-base sm:text-lg font-bold text-[#4ec9b0] mb-2 sm:mb-3">
             <span className="text-[#d4d4d4]">//</span> Daily Challenge Words ({ANSWER_WORDS.length})
           </h3>
-          <p className="text-xs text-[#6e7681] mb-3">
+          <p className="text-xs text-[#6e7681] mb-2 sm:mb-3">
             These programming terms can appear as daily challenges
           </p>
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 sm:gap-2">
             {ANSWER_WORDS.map((word) => (
               <div
                 key={word}
-                className="bg-[#3e3e42] px-2 py-1.5 rounded text-center text-sm font-mono text-[#d4d4d4] hover:bg-[#505053] transition-colors"
+                className="bg-[#3e3e42] px-1.5 sm:px-2 py-1 sm:py-1.5 rounded text-center text-xs sm:text-sm font-mono text-[#d4d4d4] hover:bg-[#505053] transition-colors"
               >
                 {word}
               </div>
@@ -34,18 +34,18 @@ export default function WordListModal({ isOpen, onClose }: WordListModalProps) {
         </div>
 
         {/* Valid Guesses Section */}
-        <div className="border-t border-[#3e3e42] pt-4">
-          <h3 className="text-lg font-bold text-[#dcdcaa] mb-3">
+        <div className="border-t border-[#3e3e42] pt-3 sm:pt-4">
+          <h3 className="text-base sm:text-lg font-bold text-[#dcdcaa] mb-2 sm:mb-3">
             <span className="text-[#d4d4d4]">//</span> Additional Valid Words ({extraWords.length})
           </h3>
-          <p className="text-xs text-[#6e7681] mb-3">
+          <p className="text-xs text-[#6e7681] mb-2 sm:mb-3">
             These words are also accepted as valid guesses
           </p>
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 sm:gap-2">
             {extraWords.map((word) => (
               <div
                 key={word}
-                className="bg-[#252526] px-2 py-1.5 rounded text-center text-sm font-mono text-[#6e7681] hover:bg-[#3e3e42] transition-colors"
+                className="bg-[#252526] px-1.5 sm:px-2 py-1 sm:py-1.5 rounded text-center text-xs sm:text-sm font-mono text-[#6e7681] hover:bg-[#3e3e42] transition-colors"
               >
                 {word}
               </div>
@@ -54,8 +54,8 @@ export default function WordListModal({ isOpen, onClose }: WordListModalProps) {
         </div>
 
         {/* Total Count */}
-        <div className="border-t border-[#3e3e42] pt-4 text-center">
-          <p className="text-sm text-[#007acc]">
+        <div className="border-t border-[#3e3e42] pt-3 sm:pt-4 text-center">
+          <p className="text-xs sm:text-sm text-[#007acc]">
             <span className="font-bold">{VALID_GUESSES.length}</span> total programming terms available
           </p>
         </div>

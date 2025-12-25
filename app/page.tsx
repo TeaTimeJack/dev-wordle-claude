@@ -233,18 +233,18 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#1e1e1e] text-[#d4d4d4] flex flex-col items-center justify-between py-8 px-4 font-mono">
       {/* Header */}
-      <div className="w-full max-w-lg relative">
-        <div className="absolute left-0 top-0 flex gap-2">
+      <div className="w-full max-w-lg relative px-2">
+        <div className="absolute left-2 top-0 flex gap-1 sm:gap-2">
           <button
             onClick={() => setShowHelp(true)}
-            className="text-2xl text-[#007acc] hover:text-[#1a8ccc] transition-colors"
+            className="text-xl sm:text-2xl text-[#007acc] hover:text-[#1a8ccc] transition-colors p-1"
             title="How to Play"
           >
             ❓
           </button>
           <button
             onClick={() => setShowWordList(true)}
-            className="text-2xl text-[#007acc] hover:text-[#1a8ccc] transition-colors"
+            className="text-xl sm:text-2xl text-[#007acc] hover:text-[#1a8ccc] transition-colors p-1"
             title="View Word List"
           >
             📝
@@ -252,23 +252,23 @@ export default function Home() {
         </div>
         <button
           onClick={() => setShowStats(true)}
-          className="absolute right-0 top-0 text-2xl text-[#007acc] hover:text-[#1a8ccc] transition-colors"
+          className="absolute right-2 top-0 text-xl sm:text-2xl text-[#007acc] hover:text-[#1a8ccc] transition-colors p-1"
           title="View Statistics"
         >
           📊
         </button>
-        <h1 className="text-4xl font-bold text-center mb-2 text-[#007acc]">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-2 text-[#007acc]">
           <span className="text-[#d4d4d4]">$</span> dev-wordle
         </h1>
-        <p className="text-center text-[#6e7681] text-sm font-mono">
+        <p className="text-center text-[#6e7681] text-xs sm:text-sm font-mono px-12">
           <span className="text-[#4ec9b0]">//</span> Guess the 5-letter programming term
         </p>
 
         {/* Mode Toggle */}
-        <div className="flex justify-center gap-2 mt-4">
+        <div className="flex justify-center gap-2 mt-3 sm:mt-4">
           <button
             onClick={() => handleModeChange('daily')}
-            className={`px-4 py-2 rounded font-bold text-sm transition-colors ${
+            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded font-bold text-xs sm:text-sm transition-colors ${
               gameMode === 'daily'
                 ? 'bg-[#007acc] text-white'
                 : 'bg-[#3e3e42] text-[#6e7681] hover:bg-[#505053]'
@@ -278,7 +278,7 @@ export default function Home() {
           </button>
           <button
             onClick={() => handleModeChange('practice')}
-            className={`px-4 py-2 rounded font-bold text-sm transition-colors ${
+            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded font-bold text-xs sm:text-sm transition-colors ${
               gameMode === 'practice'
                 ? 'bg-[#007acc] text-white'
                 : 'bg-[#3e3e42] text-[#6e7681] hover:bg-[#505053]'
@@ -290,10 +290,10 @@ export default function Home() {
       </div>
 
       {/* Main Game Area */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-8 w-full max-w-lg">
+      <div className="flex-1 flex flex-col items-center justify-center gap-4 sm:gap-6 md:gap-8 w-full max-w-lg px-2">
         {/* Error Message */}
         {errorMessage && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-3 sm:px-4 py-2 rounded text-sm sm:text-base max-w-xs sm:max-w-none text-center">
             {errorMessage}
           </div>
         )}

@@ -29,10 +29,10 @@ export default function Tile({ letter, state, isRevealing = false, isInvalid = f
   return (
     <div
       className={`
-        w-14 h-14 sm:w-16 sm:h-16
+        w-12 h-12 xs:w-14 xs:h-14 sm:w-16 sm:h-16 md:w-[70px] md:h-[70px]
         border-2
         flex items-center justify-center
-        text-2xl sm:text-3xl font-bold uppercase font-mono
+        text-xl xs:text-2xl sm:text-3xl font-bold uppercase font-mono
         transition-colors duration-200
         ${getStateClasses()}
         ${isRevealing ? 'tile-flip' : ''}

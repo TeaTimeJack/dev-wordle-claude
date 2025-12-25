@@ -35,21 +35,22 @@ export default function Keyboard({ onKeyPress, letterStates }: KeyboardProps) {
   };
 
   return (
-    <div className="flex flex-col gap-2 items-center w-full max-w-lg mx-auto">
+    <div className="flex flex-col gap-1.5 sm:gap-2 items-center w-full max-w-lg mx-auto px-1">
       {KEYBOARD_ROWS.map((row, rowIndex) => (
-        <div key={rowIndex} className="flex gap-1.5 justify-center w-full">
+        <div key={rowIndex} className="flex gap-1 sm:gap-1.5 justify-center w-full">
           {row.map((key) => (
             <button
               key={key}
               onClick={() => handleClick(key)}
               className={`
-                ${key === 'ENTER' || key === '⌫' ? 'px-4' : 'px-2'}
-                py-4
-                min-w-[40px]
+                ${key === 'ENTER' || key === '⌫' ? 'px-2 sm:px-4 text-xs sm:text-sm' : 'px-1.5 sm:px-2 text-sm sm:text-base'}
+                py-3 sm:py-4
+                min-w-[28px] sm:min-w-[40px]
                 rounded
-                font-bold text-sm
+                font-bold
                 transition-all duration-100
                 active:scale-95
+                touch-manipulation
                 ${getKeyClasses(key)}
               `}
             >

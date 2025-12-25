@@ -50,9 +50,9 @@ export default function Grid({ guesses, currentGuess, answer, currentRow, isReve
   };
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-1 sm:gap-1.5">
       {Array.from({ length: MAX_GUESSES }).map((_, rowIndex) => (
-        <div key={rowIndex} className="flex gap-1.5 justify-center">
+        <div key={rowIndex} className="flex gap-1 sm:gap-1.5 justify-center">
           {Array.from({ length: WORD_LENGTH }).map((_, tileIndex) => (
             <Tile
               key={tileIndex}
